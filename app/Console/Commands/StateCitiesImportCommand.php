@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\IBGE\IbgeService;
 use Illuminate\Console\Command;
 
 class StateCitiesImportCommand extends Command
@@ -25,14 +26,21 @@ class StateCitiesImportCommand extends Command
      * 2- Criar um comando artisan para importar as cidades do seu estado
      * 3- Salvar as cidades no BD
      */
-    public function handle()
+    public function handle(IbgeService $service) : int
     {
 
-        $state = $this->choice(
+        $rawState = $this->choice(
             question: 'Insira a sigla do estado que você deseja importar os municípios',
             choices: $this->getStates()
         );
-        return 0;
+
+        $state = $this->transformState($rawState);
+
+        $cities = $service->getCitiesByStateSigla($state);
+
+        dd($cities);
+
+        return self::SUCCESS;
     }
 
     private function getStates() : array
@@ -151,5 +159,9 @@ class StateCitiesImportCommand extends Command
         return collect($states)
             ->map(fn ($state) => $state['sigla'] . '-' . $state['nome'])
             ->toArray();
+    }
+
+    private function transformState(string $rawState) : string {
+        return substr($rawState, 0, 2);
     }
 }
